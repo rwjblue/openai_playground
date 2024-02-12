@@ -5,9 +5,8 @@ use error::AppError;
 use async_openai::{
     config::OpenAIConfig,
     types::{
-        ChatCompletionRequestAssistantMessageArgs, ChatCompletionRequestSystemMessage,
-        ChatCompletionRequestSystemMessageArgs, ChatCompletionRequestUserMessageArgs,
-        CreateChatCompletionRequestArgs,
+        ChatCompletionRequestAssistantMessageArgs, ChatCompletionRequestSystemMessageArgs,
+        ChatCompletionRequestUserMessageArgs, CreateChatCompletionRequestArgs,
     },
     Client,
 };
