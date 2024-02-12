@@ -4,16 +4,46 @@ use error::AppError;
 
 use async_openai::{
     types::{
-        ChatCompletionRequestAssistantMessageArgs, ChatCompletionRequestSystemMessageArgs,
-        ChatCompletionRequestUserMessageArgs, CreateChatCompletionRequestArgs,
+        ChatCompletionRequestAssistantMessageArgs, ChatCompletionRequestSystemMessage,
+        ChatCompletionRequestSystemMessageArgs, ChatCompletionRequestUserMessageArgs,
+        CreateChatCompletionRequestArgs,
     },
     Client,
 };
 
+macro_rules! system {
+    ($msg:expr) => {{
+        // Attempt to create the object, handling potential errors with `?`
+        ChatCompletionRequestSystemMessageArgs::default()
+            .content($msg)
+            .build()?
+            .into()
+    }};
+}
+
+macro_rules! user {
+    ($msg:expr) => {{
+        // Attempt to create the object, handling potential errors with `?`
+        ChatCompletionRequestUserMessageArgs::default()
+            .content($msg)
+            .build()?
+            .into()
+    }};
+}
+
+macro_rules! assistant {
+    ($msg:expr) => {{
+        // Attempt to create the object, handling potential errors with `?`
+        ChatCompletionRequestAssistantMessageArgs::default()
+            .content($msg)
+            .build()?
+            .into()
+    }};
+}
+
 #[tokio::main]
 async fn main() -> Result<(), AppError> {
-    let subscriber = tracing_subscriber::FmtSubscriber::new();
-    tracing::subscriber::set_global_default(subscriber)?;
+    tracing_subscriber::fmt::init();
 
     dotenv::dotenv()?;
 
@@ -21,28 +51,16 @@ async fn main() -> Result<(), AppError> {
 
     let request = CreateChatCompletionRequestArgs::default()
         .max_tokens(512u16)
-        .model("gpt-3.5-turbo")
+        .model("gpt-4-turbo-preview")
         .messages([
-            ChatCompletionRequestSystemMessageArgs::default()
-                .content("You are a helpful assistant.")
-                .build()?
-                .into(),
-            ChatCompletionRequestUserMessageArgs::default()
-                .content("Who won the world series in 2020?")
-                .build()?
-                .into(),
-            ChatCompletionRequestAssistantMessageArgs::default()
-                .content("The Los Angeles Dodgers won the World Series in 2020.")
-                .build()?
-                .into(),
-            ChatCompletionRequestUserMessageArgs::default()
-                .content("Where was it played?")
-                .build()?
-                .into(),
+            system!("You are a helpful assistant."),
+            user!("Who won the world series in 2020?"),
+            assistant!("The Los Angeles Dodgers won the World Series in 2020."),
+            user!("Where was it played?"),
         ])
         .build()?;
 
-    println!("{}", serde_json::to_string(&request).unwrap());
+    tracing::info!("Sending request: {}", serde_json::to_string(&request)?);
 
     let response = client.chat().create(request).await?;
 
