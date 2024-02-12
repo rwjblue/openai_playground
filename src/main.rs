@@ -12,7 +12,10 @@ use async_openai::{
 
 #[tokio::main]
 async fn main() -> Result<(), AppError> {
-    dotenv::dotenv().ok();
+    let subscriber = tracing_subscriber::FmtSubscriber::new();
+    tracing::subscriber::set_global_default(subscriber)?;
+
+    dotenv::dotenv()?;
 
     let client = Client::new();
 
