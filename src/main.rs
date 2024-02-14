@@ -90,6 +90,9 @@ async fn hello_functions() -> AppResult {
     // TODO: take code, run it in python
     //  -> report errors
     //  -> report bad results?  e.g. no errors but calls functions incorrectly
+    //
+    // TODO: add another function (code_search); update sys prompt + test prompts for using both
+    // code search and dependency backend.
     let request = CreateChatCompletionRequestArgs::default()
         .max_tokens(512u16)
         .model("mistral")
