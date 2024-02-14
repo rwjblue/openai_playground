@@ -13,4 +13,7 @@ pub enum AppError {
 
     #[error("Tracing could not set global default subscriber: {0}")]
     TracingSetGlobalDefault(#[from] tracing::dispatcher::SetGlobalDefaultError),
+
+    #[error("Environment variable not found: {0}")]
+    EnvVar(#[from] std::env::VarError),
 }

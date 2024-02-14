@@ -3,6 +3,7 @@ mod error;
 use error::AppError;
 
 use async_openai::{
+    config::OpenAIConfig,
     types::{
         ChatCompletionRequestAssistantMessageArgs, ChatCompletionRequestSystemMessage,
         ChatCompletionRequestSystemMessageArgs, ChatCompletionRequestUserMessageArgs,
@@ -47,11 +48,12 @@ async fn main() -> Result<(), AppError> {
 
     dotenv::dotenv()?;
 
-    let client = Client::new();
+    let config = OpenAIConfig::new().with_api_base("http://localhost:11434/v1");
+    let client = Client::with_config(config);
 
     let request = CreateChatCompletionRequestArgs::default()
         .max_tokens(512u16)
-        .model("gpt-4-turbo-preview")
+        .model("mistral")
         .messages([
             system!("You are a helpful assistant."),
             user!("Who won the world series in 2020?"),
