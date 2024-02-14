@@ -42,8 +42,9 @@ macro_rules! assistant {
     }};
 }
 
-#[tokio::main]
-async fn main() -> Result<(), AppError> {
+type AppResult<Success = ()> = Result<Success, AppError>;
+
+async fn hello_word() -> AppResult {
     tracing_subscriber::fmt::init();
 
     dotenv::dotenv()?;
@@ -75,4 +76,47 @@ async fn main() -> Result<(), AppError> {
     }
 
     Ok(())
+}
+
+async fn hello_functions() -> AppResult {
+    tracing_subscriber::fmt::init();
+
+    dotenv::dotenv()?;
+
+    let config = OpenAIConfig::new().with_api_base("http://localhost:11434/v1");
+    let client = Client::with_config(config);
+
+    // TODO: parse json -> tell model bad job if json invalid
+    // TODO: take code, run it in python
+    //  -> report errors
+    //  -> report bad results?  e.g. no errors but calls functions incorrectly
+    let request = CreateChatCompletionRequestArgs::default()
+        .max_tokens(512u16)
+        .model("mistral")
+        .messages([
+            system!(include_str!("./hello_functions_system_prompt.txt")),
+            // user!("Who depends on restli vesion v1.3.6?"),
+            user!("I'm looking for users of moo-bar version 2.1"),
+        ])
+        .build()?;
+
+    tracing::info!("Sending request: {}", serde_json::to_string(&request)?);
+
+    let response = client.chat().create(request).await?;
+
+    println!("\nResponse:\n");
+    for choice in response.choices {
+        println!(
+            "{}: Role: {}  Content: {:?}",
+            choice.index, choice.message.role, choice.message.content
+        );
+    }
+
+    Ok(())
+}
+
+#[tokio::main]
+async fn main() -> AppResult {
+    // hello_word().await
+    hello_functions().await
 }
