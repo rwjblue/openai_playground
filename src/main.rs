@@ -78,10 +78,6 @@ async fn hello_word() -> AppResult {
 }
 
 async fn hello_functions() -> AppResult {
-    tracing_subscriber::fmt::init();
-
-    dotenv::dotenv()?;
-
     let config = OpenAIConfig::new().with_api_base("http://localhost:11434/v1");
     let client = Client::with_config(config);
 
@@ -119,6 +115,10 @@ async fn hello_functions() -> AppResult {
 
 #[tokio::main]
 async fn main() -> AppResult {
+    tracing_subscriber::fmt::init();
+
+    dotenv::dotenv()?;
+
     // hello_word().await
     hello_functions().await
 }
