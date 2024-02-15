@@ -77,9 +77,50 @@ async fn hello_word() -> AppResult {
     Ok(())
 }
 
-async fn hello_functions() -> AppResult {
+fn parse_json(json_str: &str) -> Result<serde_json::Value, serde_json::Error> {
+    serde_json::from_str::<serde_json::Value>(json_str)
+}
+
+async fn execute_query_to_json(
+    system_prompt: &str,
+    user_query: &str,
+) -> Result<serde_json::Value, AppError> {
     let config = OpenAIConfig::new().with_api_base("http://localhost:11434/v1");
     let client = Client::with_config(config);
+
+    let request = CreateChatCompletionRequestArgs::default()
+        .max_tokens(512u16)
+        .model("mistral")
+        .messages([system!(system_prompt), user!(user_query)])
+        .build()?;
+
+    tracing::info!("Sending request: {}", serde_json::to_string(&request)?);
+
+    let response = client.chat().create(request).await?;
+
+    if let Some(first_choice) = response.choices.first() {
+        match &first_choice.message.content {
+            Some(possible_json) => match parse_json(possible_json) {
+                Ok(json) => {
+                    println!("\n\n Found valid JSON: {}", json);
+                    Ok(json)
+                }
+                Err(e) => {
+                    println!("Not valid JSON: {:?}", e);
+                    Err(AppError::Serde(e))
+                }
+            },
+            None => todo!(),
+        }
+    } else {
+        println!("No choices are available.");
+        todo!();
+    }
+}
+
+async fn hello_functions() -> AppResult {
+    let system = include_str!("./hello_functions_system_prompt.txt");
+    let user = "Who depends on restli version v1.3.6?";
 
     // TODO: parse json -> tell model bad job if json invalid
     // TODO: take code, run it in python
@@ -88,27 +129,8 @@ async fn hello_functions() -> AppResult {
     //
     // TODO: add another function (code_search); update sys prompt + test prompts for using both
     // code search and dependency backend.
-    let request = CreateChatCompletionRequestArgs::default()
-        .max_tokens(512u16)
-        .model("mistral")
-        .messages([
-            system!(include_str!("./hello_functions_system_prompt.txt")),
-            // user!("Who depends on restli vesion v1.3.6?"),
-            user!("I'm looking for users of moo-bar version 2.1"),
-        ])
-        .build()?;
 
-    tracing::info!("Sending request: {}", serde_json::to_string(&request)?);
-
-    let response = client.chat().create(request).await?;
-
-    println!("\nResponse:\n");
-    for choice in response.choices {
-        println!(
-            "{}: Role: {}  Content: {:?}",
-            choice.index, choice.message.role, choice.message.content
-        );
-    }
+    execute_query_to_json(system, user).await?;
 
     Ok(())
 }
