@@ -43,40 +43,6 @@ macro_rules! assistant {
 
 type AppResult<Success = ()> = Result<Success, AppError>;
 
-async fn hello_word() -> AppResult {
-    tracing_subscriber::fmt::init();
-
-    dotenv::dotenv()?;
-
-    let config = OpenAIConfig::new().with_api_base("http://localhost:11434/v1");
-    let client = Client::with_config(config);
-
-    let request = CreateChatCompletionRequestArgs::default()
-        .max_tokens(512u16)
-        .model("mistral")
-        .messages([
-            system!("You are a helpful assistant."),
-            user!("Who won the world series in 2020?"),
-            assistant!("The Los Angeles Dodgers won the World Series in 2020."),
-            user!("Where was it played?"),
-        ])
-        .build()?;
-
-    tracing::info!("Sending request: {}", serde_json::to_string(&request)?);
-
-    let response = client.chat().create(request).await?;
-
-    println!("\nResponse:\n");
-    for choice in response.choices {
-        println!(
-            "{}: Role: {}  Content: {:?}",
-            choice.index, choice.message.role, choice.message.content
-        );
-    }
-
-    Ok(())
-}
-
 fn parse_json(json_str: &str) -> Result<serde_json::Value, serde_json::Error> {
     serde_json::from_str::<serde_json::Value>(json_str)
 }
