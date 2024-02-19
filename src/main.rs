@@ -5,7 +5,7 @@ use error::AppError;
 use async_openai::{
     config::OpenAIConfig,
     types::{
-        ChatCompletionRequestAssistantMessageArgs, ChatCompletionRequestSystemMessageArgs,
+        ChatCompletionRequestMessage, ChatCompletionRequestSystemMessageArgs,
         ChatCompletionRequestUserMessageArgs, CreateChatCompletionRequestArgs,
     },
     Client,
@@ -48,8 +48,7 @@ fn parse_json(json_str: &str) -> Result<serde_json::Value, serde_json::Error> {
 }
 
 async fn execute_query_to_json(
-    system_prompt: &str,
-    user_query: &str,
+    messages: Vec<ChatCompletionRequestMessage>,
 ) -> Result<serde_json::Value, AppError> {
     let config = OpenAIConfig::new().with_api_base("http://localhost:11434/v1");
     let client = Client::with_config(config);
@@ -57,7 +56,7 @@ async fn execute_query_to_json(
     let request = CreateChatCompletionRequestArgs::default()
         .max_tokens(512u16)
         .model("mistral")
-        .messages([system!(system_prompt), user!(user_query)])
+        .messages(messages)
         .build()?;
 
     tracing::info!("Sending request: {}", serde_json::to_string(&request)?);
@@ -85,9 +84,6 @@ async fn execute_query_to_json(
 }
 
 async fn hello_functions() -> AppResult {
-    let system = include_str!("./hello_functions_system_prompt.txt");
-    let user = "Who depends on restli version v1.3.6?";
-
     // TODO: parse json -> tell model bad job if json invalid
     // TODO: take code, run it in python
     //  -> report errors
@@ -96,7 +92,14 @@ async fn hello_functions() -> AppResult {
     // TODO: add another function (code_search); update sys prompt + test prompts for using both
     // code search and dependency backend.
 
-    execute_query_to_json(system, user).await?;
+    execute_query_to_json(
+        [
+            system!(include_str!("./hello_functions_system_prompt.txt")),
+            user!("Who depends on restli version v1.3.6?"),
+        ]
+        .into(),
+    )
+    .await?;
 
     Ok(())
 }
